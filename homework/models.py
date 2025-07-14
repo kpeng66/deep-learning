@@ -75,7 +75,7 @@ class MLPClassifier(nn.Module):
         h: int = 64,
         w: int = 64,
         num_classes: int = 6,
-        hidden_dim: int = 128,  # you can tune this
+        hidden_dim: int = 192,  # you can tune this
     ):
         """
         An MLP with a single hidden layer
