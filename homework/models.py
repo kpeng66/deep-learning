@@ -171,11 +171,14 @@ class MLPClassifierDeep(nn.Module):
 
 
 class MLPClassifierDeepResidual(nn.Module):
+
     def __init__(
         self,
         h: int = 64,
         w: int = 64,
         num_classes: int = 6,
+        hidden_dim: int = 256,
+        num_layers: int = 5,
     ):
         """
         Args:
@@ -188,10 +191,18 @@ class MLPClassifierDeepResidual(nn.Module):
             num_layers: int, number of hidden layers
         """
         super().__init__()
+        assert num_layers >= 3, "Need at least 3 layers for residuals"
 
-        raise NotImplementedError(
-            "MLPClassifierDeepResidual.__init__() is not implemented"
+        self.input_layer = nn.Linear(3 * h * w, hidden_dim)
+
+        # Hidden layers in a ModuleList so we can apply residuals
+        self.hidden_layers = nn.ModuleList(
+            [nn.Linear(hidden_dim, hidden_dim) for _ in range(num_layers - 2)]
         )
+
+        self.output_layer = nn.Linear(hidden_dim, num_classes)
+
+        self.activation = nn.ReLU()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -201,9 +212,18 @@ class MLPClassifierDeepResidual(nn.Module):
         Returns:
             tensor (b, num_classes) logits
         """
-        raise NotImplementedError(
-            "MLPClassifierDeepResidual.forward() is not implemented"
-        )
+        batch_size = x.shape[0]
+        x = x.view(batch_size, -1)
+
+        out = self.activation(self.input_layer(x))
+
+        for layer in self.hidden_layers:
+            residual = out
+            out = self.activation(layer(out))
+            out = out + residual  # residual connection
+
+        logits = self.output_layer(out)
+        return logits
 
 
 model_factory = {
