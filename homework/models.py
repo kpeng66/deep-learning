@@ -10,6 +10,7 @@ from pathlib import Path
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class ClassificationLoss(nn.Module):
@@ -25,6 +26,7 @@ class ClassificationLoss(nn.Module):
         Returns:
             tensor, scalar loss
         """
+        return F.cross_entropy(logits, target)
         raise NotImplementedError("ClassificationLoss.forward() is not implemented")
 
 
@@ -42,8 +44,12 @@ class LinearClassifier(nn.Module):
             num_classes: int, number of classes
         """
         super().__init__()
+        self.h = h
+        self.w = w
+        self.num_classes = num_classes
 
-        raise NotImplementedError("LinearClassifier.__init__() is not implemented")
+        # Single linear layer from flattened input (3 x H x W) to num_classes
+        self.linear = nn.Linear(3 * h * w, num_classes)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -53,7 +59,13 @@ class LinearClassifier(nn.Module):
         Returns:
             tensor (b, num_classes) logits
         """
-        raise NotImplementedError("LinearClassifier.forward() is not implemented")
+        batch_size = x.shape[0]
+        # Flatten image: (b, 3, H, W) -> (b, 3*H*W)
+        x = x.view(batch_size, -1)
+
+        # Forward through linear layer, output logits
+        logits = self.linear(x)
+        return logits
 
 
 class MLPClassifier(nn.Module):
@@ -139,7 +151,9 @@ class MLPClassifierDeepResidual(nn.Module):
         """
         super().__init__()
 
-        raise NotImplementedError("MLPClassifierDeepResidual.__init__() is not implemented")
+        raise NotImplementedError(
+            "MLPClassifierDeepResidual.__init__() is not implemented"
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -149,7 +163,9 @@ class MLPClassifierDeepResidual(nn.Module):
         Returns:
             tensor (b, num_classes) logits
         """
-        raise NotImplementedError("MLPClassifierDeepResidual.forward() is not implemented")
+        raise NotImplementedError(
+            "MLPClassifierDeepResidual.forward() is not implemented"
+        )
 
 
 model_factory = {
@@ -177,7 +193,9 @@ def save_model(model):
     """
     for n, m in model_factory.items():
         if isinstance(model, m):
-            return torch.save(model.state_dict(), Path(__file__).resolve().parent / f"{n}.th")
+            return torch.save(
+                model.state_dict(), Path(__file__).resolve().parent / f"{n}.th"
+            )
     raise ValueError(f"Model type '{str(type(model))}' not supported")
 
 
