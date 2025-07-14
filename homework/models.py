@@ -69,11 +69,13 @@ class LinearClassifier(nn.Module):
 
 
 class MLPClassifier(nn.Module):
+
     def __init__(
         self,
         h: int = 64,
         w: int = 64,
         num_classes: int = 6,
+        hidden_dim: int = 256,  # you can tune this
     ):
         """
         An MLP with a single hidden layer
@@ -85,7 +87,19 @@ class MLPClassifier(nn.Module):
         """
         super().__init__()
 
-        raise NotImplementedError("MLPClassifier.__init__() is not implemented")
+        self.h = h
+        self.w = w
+        self.num_classes = num_classes
+        self.hidden_dim = hidden_dim
+
+        input_dim = 3 * h * w
+
+        # Define layers: Flatten -> Linear -> ReLU -> Linear to num_classes
+        self.model = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, num_classes),
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -95,7 +109,12 @@ class MLPClassifier(nn.Module):
         Returns:
             tensor (b, num_classes) logits
         """
-        raise NotImplementedError("MLPClassifier.forward() is not implemented")
+        batch_size = x.shape[0]
+        # Flatten image: (b, 3, H, W) -> (b, 3*H*W)
+        x = x.view(batch_size, -1)
+
+        logits = self.model(x)
+        return logits
 
 
 class MLPClassifierDeep(nn.Module):
